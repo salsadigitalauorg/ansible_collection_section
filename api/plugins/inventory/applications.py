@@ -4,6 +4,7 @@ import os
 from ansible.errors import AnsibleError
 from ansible.plugins.inventory import BaseInventoryPlugin, Constructable, Cacheable
 from ansible.module_utils.urls import open_url
+import re
 
 __metaclass__ = type
 
@@ -65,53 +66,63 @@ class InventoryModule(BaseInventoryPlugin, Constructable, Cacheable):
         config_data = self._read_config_data(path)
         self.setup(config_data, cache, cache_key)
 
+    def slugify(self, text):
+        return re.sub(r'[\W-]+', '_', text).lower()
+
     def setup(self, config_data, cache, cache_key):
         if config_data.get('api_host'):
             self.api_host = config_data.get('api_host')
 
         connections = config_data.get('connections')
 
-        if len(connections) == 0:
-            config = {
-                'username': os.getenv('SECTION_IO_USERNAME'),
-                'password': os.getenv('SECTION_IO_PASSWORD')
-            }
+        source_data = None
 
-            if os.getenv('SECTION_IO_ACCOUNT_ID'):
-                config['limit_accounts'] = [os.getenv('SECTION_IO_ACCOUNT_ID')]
-
-        for connection in connections:
+        if cache and cache_key in self._cache:
             try:
-                self.fetch(**connection)
+                source_data = self._cache[cache_key]
             except KeyError:
-                raise AnsibleError('Invalid connection dict')
+                pass
+
+        if not source_data:
+            if len(connections) == 0:
+                config = {
+                    'username': os.getenv('SECTION_IO_USERNAME'),
+                    'password': os.getenv('SECTION_IO_PASSWORD')
+                }
+
+                if os.getenv('SECTION_IO_ACCOUNT_ID'):
+                    config['limit_accounts'] = [os.getenv('SECTION_IO_ACCOUNT_ID')]
+
+            for connection in connections:
+                try:
+                    self.fetch(**connection)
+                except KeyError:
+                    raise AnsibleError('Invalid connection dict')
 
     def fetch(self, username, password, limit_accounts=[]):
         host = self.api_host
         accounts = []
 
-        response = open_url(f'{host}/account', method='GET',
-                            url_username=username, url_password=password, force_basic_auth=True)
+        response = open_url(f'{host}/account', method='GET', url_username=username, url_password=password, force_basic_auth=True)
+
         for account in json.loads(response.read()):
             try:
                 if len(limit_accounts) > 0 and account['id'] not in limit_accounts:
                     continue
                 accounts.append({
                     'id': account['id'],
-                    'name': account['account_name'],
+                    'name': self.slugify(account['account_name']),
                 })
             except KeyError as key:
                 raise AnsibleError(f'Invalid account definition, missing ({key}) from response.')
 
-        # Fetch applications for the accounts.
+        # # Fetch applications for the accounts.
         for account in accounts:
             sid = account['id']
 
-            applications = open_url(f'{host}/account/{sid}/application', method='GET',
-                                url_username=username, url_password=password, force_basic_auth=True)
-
-            # Add an inventory parent group for the account.
             self.inventory.add_group(account['name'])
+
+            applications = open_url(f'{host}/account/{sid}/application', method='GET', url_username=username, url_password=password, force_basic_auth=True)
 
             for application in json.loads(applications.read()):
                 try:
@@ -122,22 +133,20 @@ class InventoryModule(BaseInventoryPlugin, Constructable, Cacheable):
 
                 # Add inventory group for the application.
                 self.inventory.add_group(app_name)
-                self.inventory.add_child(account['name'], app_name)
 
-                environments = open_url(f'{host}/account/{sid}/application/{app_id}/environment',
-                                        method='GET', url_username=username, url_password=password, force_basic_auth=True)
+                environments = open_url(f'{host}/account/{sid}/application/{app_id}/environment', method='GET', url_username=username, url_password=password, force_basic_auth=True)
 
                 for environment in json.loads(environments.read()):
-                    env_name = environment['environment_name'][0].upper(
-                    ) + environment['environment_name'][1:]
-
+                    env_name = environment['environment_name']
                     host_name = f'{sid}-{app_name}-{env_name}'
 
                     self.inventory.add_group(env_name)
-                    self.inventory.add_child(app_name, env_name)
 
+                    # Add the host to the groups.
                     self.inventory.add_host(host_name)
                     self.inventory.add_child(env_name, host_name)
+                    self.inventory.add_child(app_name, host_name)
+                    self.inventory.add_child(account['name'], host_name)
 
                     # Add hostvars.
                     self.inventory.set_variable(host_name, 'branch', env_name)
