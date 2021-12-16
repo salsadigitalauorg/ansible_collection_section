@@ -1,0 +1,20 @@
+namespace: section
+name: api
+version: 1.0.0
+readme: README.md
+
+authors:
+  - Yusuf Hasan Miyan <yusuf.hasanmiyan@salsadigital.com.au>
+  - Steve Worley <steven.worley@salsadigital.com.au>
+
+description: A collection to interact with the Lagoon API
+license: GPL-2.0-or-later
+
+tags:
+- section.io
+- cdn
+- api
+
+repository: ''
+build_ignore: []
+
