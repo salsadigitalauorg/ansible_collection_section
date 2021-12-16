@@ -78,7 +78,7 @@ class InventoryModule(BaseInventoryPlugin, Constructable, Cacheable):
             }
 
             if os.getenv('SECTION_IO_ACCOUNT_ID'):
-                config['account_id'] = [os.getenv('SECTION_IO_ACCOUNT_ID')]
+                config['limit_accounts'] = [os.getenv('SECTION_IO_ACCOUNT_ID')]
 
         for connection in connections:
             try:
