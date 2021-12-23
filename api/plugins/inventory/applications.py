@@ -78,17 +78,20 @@ class InventoryModule(BaseInventoryPlugin, Constructable, Cacheable):
             except KeyError:
                 pass
 
+        config_spec = dict(
+            username=os.getenv('SECTION_IO_USERNAME'),
+            password=os.getenv('SECTION_IO_PASSWORD'),
+            limit_accounts=[]
+        )
+
         if not source_data:
             if len(connections) == 0:
-                config = {
-                    'username': os.getenv('SECTION_IO_USERNAME'),
-                    'password': os.getenv('SECTION_IO_PASSWORD')
-                }
-
                 if os.getenv('SECTION_IO_ACCOUNT_ID'):
-                    config['limit_accounts'] = [os.getenv('SECTION_IO_ACCOUNT_ID')]
+                    config_spec['limit_accounts'] = [os.getenv('SECTION_IO_ACCOUNT_ID')]
+                connections.append(config_spec)
 
             for connection in connections:
+                connection = dict(config_spec, **connection)
                 try:
                     self.fetch(**connection)
                 except KeyError:
