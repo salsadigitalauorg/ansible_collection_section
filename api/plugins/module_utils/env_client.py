@@ -6,8 +6,8 @@ from ansible_collections.section.api.plugins.module_utils.client import Client
 
 class EnvClient(Client):
 
-    def __init__(self, account, application, endpoint, username, password, options={}):
-        Client.__init__(self, endpoint, username, password, options)
+    def __init__(self, account, application, username, password, options={}):
+        Client.__init__(self, username=username, password=password, options=options)
         self.options['base_path'] = f'/account/{account}/application/{application}/environment'
 
     def all(self):

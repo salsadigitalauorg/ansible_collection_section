@@ -63,7 +63,6 @@ EXAMPLES = r'''
 
 def main():
     module_args = dict(
-        section_endpoint=dict(type='str', required=True),
         section_username=dict(type='str', required=True),
         section_password=dict(type='str', required=True, no_log=True),
         headers=dict(type='dict', required=False, default={}),
@@ -82,12 +81,11 @@ def main():
     )
 
     client = ApiClient(
-        module.params['account'],
-        module.params['application'],
-        module.params['section_endpoint'],
-        module.params['section_username'],
-        module.params['section_password'],
-        {'headers': module.params['headers']}
+        account=module.params['account'],
+        application=module.params['application'],
+        username=module.params['section_username'],
+        password=module.params['section_password'],
+        options={'headers': module.params['headers']}
     )
 
     environment = client.get(module.params['environment'])
@@ -116,9 +114,11 @@ def main():
         result['changed'] = True
 
     elif module.params['state'] == 'absent':
-
-        result['result'] = client.delete_domain(module.params['environment'], module.params['hostname'])
-        result['changed'] = True
+        for domain in environment['domains']:
+            if domain['name'] == module.params['hostname']:
+                client.delete_domain(module.params['environment'], module.params['hostname'])
+                result['result'] = module.params['hostname']
+                result['changed'] = True
 
     module.exit_json(**result)
 

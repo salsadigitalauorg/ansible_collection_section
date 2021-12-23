@@ -52,7 +52,6 @@ EXAMPLES = r'''
 
 def main():
     module_args = dict(
-        endpoint=dict(type='str', required=True),
         username=dict(type='str', required=True),
         password=dict(type='str', required=True, no_log=True),
         headers=dict(type='dict', required=False, default={}),
@@ -71,29 +70,12 @@ def main():
     )
 
     client = ApiClient(
-        module.params['endpoint'],
         module.params['username'],
         module.params['password'],
         {'headers': module.params['headers']}
     )
 
-    if module.params['state'] == 'present':
-        for domain in environment['domains']:
-            if domain['name'] == module.params['hostname']:
-                module.exit_json(**result)
-
-        result['result'] = client.add_domain(
-            module.params['environment'], module.params['hostname'])
-        result['changed'] = True
-
-    elif module.params['state'] == 'absent':
-
-        result['result'] = client.delete_domain(
-            module.params['environment'], module.params['hostname'])
-        result['changed'] = True
-
-    module.exit_json(**result)
-
+    client.ban('varnish', module.params['expression'])
 
 if __name__ == '__main__':
     main()

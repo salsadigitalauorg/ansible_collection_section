@@ -14,12 +14,6 @@ DOCUMENTATION = """
     _terms:
       description: The environment to query for
       required: True
-    endpoint:
-      description: The Section API endpoint
-      type: string
-      required: True
-      vars:
-        - name: section_endpoint
     username:
       description: The API user
       type: string
@@ -77,7 +71,6 @@ class LookupModule(LookupBase):
         client = ApiClient(
             self.get_option('account'),
             self.get_option('application'),
-            self.get_option('endpoint'),
             self.get_option('username'),
             self.get_option('password'),
             {'headers': self.get_option('headers', {})}

@@ -1,10 +1,12 @@
 from __future__ import absolute_import, division, print_function
+
 import json
 import os
+import re
+
 from ansible.errors import AnsibleError
 from ansible.plugins.inventory import BaseInventoryPlugin, Constructable, Cacheable
-from ansible.module_utils.urls import open_url
-import re
+from ansible_collections.section.api.plugins.module_utils.client import Client as ApiClient
 
 __metaclass__ = type
 
@@ -18,9 +20,6 @@ DOCUMENTATION = """
       - Fetch applications for one or more accounts
       - Groups by account id
     options:
-      api_host:
-          description:
-          - Optional API host override
       connections:
           description:
           - List of Section.io API connection configuration.
@@ -58,8 +57,6 @@ class InventoryModule(BaseInventoryPlugin, Constructable, Cacheable):
 
     NAME = "section.api.applications"
 
-    api_host = "https://aperture.section.io/api/v1"
-
     def parse(self, inventory, loader, path, cache=True):
         super(InventoryModule, self).parse(inventory, loader, path)
         cache_key = self._get_cache_prefix(path)
@@ -70,8 +67,6 @@ class InventoryModule(BaseInventoryPlugin, Constructable, Cacheable):
         return re.sub(r'[\W-]+', '_', text).lower()
 
     def setup(self, config_data, cache, cache_key):
-        if config_data.get('api_host'):
-            self.api_host = config_data.get('api_host')
 
         connections = config_data.get('connections')
 
@@ -100,12 +95,12 @@ class InventoryModule(BaseInventoryPlugin, Constructable, Cacheable):
                     raise AnsibleError('Invalid connection dict')
 
     def fetch(self, username, password, limit_accounts=[]):
-        host = self.api_host
         accounts = []
 
-        response = open_url(f'{host}/account', method='GET', url_username=username, url_password=password, force_basic_auth=True)
+        client = ApiClient(username, password)
+        response = client.request('/account')
 
-        for account in json.loads(response.read()):
+        for account in response:
             try:
                 if len(limit_accounts) > 0 and account['id'] not in limit_accounts:
                     continue
@@ -116,15 +111,15 @@ class InventoryModule(BaseInventoryPlugin, Constructable, Cacheable):
             except KeyError as key:
                 raise AnsibleError(f'Invalid account definition, missing ({key}) from response.')
 
-        # # Fetch applications for the accounts.
+        # Fetch applications for the accounts.
         for account in accounts:
             sid = account['id']
 
             self.inventory.add_group(account['name'])
 
-            applications = open_url(f'{host}/account/{sid}/application', method='GET', url_username=username, url_password=password, force_basic_auth=True)
+            applications = client.request(f'/account/{sid}/application')
 
-            for application in json.loads(applications.read()):
+            for application in applications:
                 try:
                     app_id = application['id']
                     app_name = application['application_name']
@@ -134,9 +129,9 @@ class InventoryModule(BaseInventoryPlugin, Constructable, Cacheable):
                 # Add inventory group for the application.
                 self.inventory.add_group(app_name)
 
-                environments = open_url(f'{host}/account/{sid}/application/{app_id}/environment', method='GET', url_username=username, url_password=password, force_basic_auth=True)
+                environments = client.request(f'/account/{sid}/application/{app_id}/environment')
 
-                for environment in json.loads(environments.read()):
+                for environment in environments:
                     env_name = environment['environment_name']
                     host_name = f'{sid}-{app_name}-{env_name}'
 
