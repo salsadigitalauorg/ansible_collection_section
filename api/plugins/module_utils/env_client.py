@@ -49,6 +49,10 @@ class EnvClient(Client):
             The environment name
         egress : str
             The egress hostname
+        egress_name : str, optional
+            The egress name as seen in Sections UI
+        remove_headers : list, optional
+            A list of headers to remove from incoming requests
         """
         return self.request(method='POST', path=f'/{name}/egress', payload={
             "remove_request_headers": remove_headers,
