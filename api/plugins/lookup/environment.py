@@ -53,12 +53,10 @@ DOCUMENTATION = """
 
 EXAMPLES = """
 - name: retrieve a environment's information
-  debug: msg="{{ lookup('section.api.environment', 'Develop', account=1, application=1) }}"
+  debug: msg="{{ lookup('section.api.environment', 'Develop', section_account=1, section_application=1) }}"
 """
 
-
 display = Display()
-
 
 class LookupModule(LookupBase):
 
@@ -69,10 +67,10 @@ class LookupModule(LookupBase):
         self.set_options(var_options=variables, direct=kwargs)
 
         client = ApiClient(
-            self.get_option('account'),
-            self.get_option('application'),
-            self.get_option('username'),
-            self.get_option('password'),
+            self.get_option('section_account'),
+            self.get_option('section_application'),
+            self.get_option('section_username'),
+            self.get_option('section_password'),
             {'headers': self.get_option('headers', {})}
         )
 

@@ -52,11 +52,11 @@ EXAMPLES = r'''
 
 def main():
     module_args = dict(
-        username=dict(type='str', required=True),
-        password=dict(type='str', required=True, no_log=True),
+        section_username=dict(type='str', required=True),
+        section_password=dict(type='str', required=True, no_log=True),
         headers=dict(type='dict', required=False, default={}),
-        account=dict(type='int', required=True),
-        application=dict(type='int', required=True),
+        section_account=dict(type='int', required=True),
+        section_application=dict(type='int', required=True),
         environment=dict(type='str', required=True),
         hostname=dict(type='str', required=True),
         state=dict(type='str', required=False, default='present'),
@@ -70,8 +70,10 @@ def main():
     )
 
     client = ApiClient(
-        module.params['username'],
-        module.params['password'],
+        module.params['section_account'],
+        module.params['section_application'],
+        module.params['section_username'],
+        module.params['section_password'],
         {'headers': module.params['headers']}
     )
 

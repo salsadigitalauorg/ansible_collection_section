@@ -66,8 +66,8 @@ def main():
         section_username=dict(type='str', required=True),
         section_password=dict(type='str', required=True, no_log=True),
         headers=dict(type='dict', required=False, default={}),
-        account=dict(type='int', required=True),
-        application=dict(type='int', required=True),
+        section_account=dict(type='int', required=True),
+        section_application=dict(type='int', required=True),
         environment=dict(type='str', required=True),
         hostname=dict(type='str', required=True),
         state=dict(type='str', required=False, default='present'),
@@ -81,8 +81,8 @@ def main():
     )
 
     client = ApiClient(
-        account=module.params['account'],
-        application=module.params['application'],
+        account=module.params['section_account'],
+        application=module.params['section_application'],
         username=module.params['section_username'],
         password=module.params['section_password'],
         options={'headers': module.params['headers']}

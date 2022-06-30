@@ -40,12 +40,15 @@ class Client:
 
         display.v(f'API call path: {url}')
         display.v("API call payload: %s" % payload)
+        display.v("Request headers: %s" % self.options.get('headers'))
 
         try:
             response = open_url(f'{url}',
                                 method=method,
                                 url_username=self.options['username'],
                                 url_password=self.options['password'],
+                                data=json.dumps(payload),
+                                force_basic_auth=True,
                                 validate_certs=self.options.get(
                                     'validate_certs', False),
                                 headers=self.options.get('headers', {}),
