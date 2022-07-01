@@ -28,3 +28,37 @@ class EnvClient(Client):
 
     def delete_domain(self, name, hostname):
         return self.request(f'/{name}/domain/{hostname}', 'DELETE')
+
+    def list_egress(self, name):
+        """List egress configuration for an environment
+
+        Parameters
+        ----------
+        name : str
+          The environment name
+        """
+
+        return self.request(method="GET", path=f"/{name}/egress")
+
+    def update_egress(self, name, egress, egress_name='default', remove_headers=list()):
+        """ Updates an environments default egress.
+
+        Parameters
+        ----------
+        name : str
+            The environment name
+        egress : str
+            The egress hostname
+        egress_name : str, optional
+            The egress name as seen in Sections UI
+        remove_headers : list, optional
+            A list of headers to remove from incoming requests
+        """
+        return self.request(method='POST', path=f'/{name}/egress', payload={
+            "remove_request_headers": remove_headers,
+            "origins": {
+                f"{egress_name}": {
+                    "address": egress,
+                }
+            },
+        })
